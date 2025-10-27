@@ -1,0 +1,39 @@
+﻿.header {
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+  padding: 1rem 0;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  color: #6366f1;
+}
+
+.nav {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav a {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.nav a:hover {
+  color: #6366f1;
+}
+
+.account {
+  background-color: #0f172a;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: #0ea5e9;
+  border: 1px solid #334155;
+}
