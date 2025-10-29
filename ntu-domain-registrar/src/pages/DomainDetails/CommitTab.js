@@ -105,16 +105,12 @@ const CommitTab = ({ domain, domainData, onUpdate }) => {
             onChange={(e) => setSecret(e.target.value)}
             className="h-14 border-2 border-gray-300 bg-white text-base leading-none text-black placeholder:text-gray-500"
           />
-          <Card className="border-gray-300 bg-gray-50">
-            <CardContent className="flex gap-3 p-5">
-              <div className="flex items-center justify-center rounded-full bg-white p-2.5">
-                <AlertCircle className="h-5 w-5 text-black" />
-              </div>
-              <p className="flex-1 text-sm leading-relaxed text-gray-700">
-                Save this secret phrase securely. You will need it during the reveal phase.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex items-start gap-2 text-amber-700">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm leading-relaxed">
+              Save this secret phrase securely. You will need it during the reveal phase.
+            </p>
+          </div>
         </div>
 
         <Button 

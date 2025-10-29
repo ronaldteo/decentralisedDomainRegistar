@@ -1,72 +1,162 @@
 ﻿import { ethers } from 'ethers';
 import CONTRACT_ABI from '../config/contractABI.json';
 
-const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
+const CONTRACT_ADDRESS = '0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3';
 
 class ContractService {
   constructor() {
     this.provider = null;
     this.signer = null;
     this.contract = null;
+    this.account = null;
+    this.listenersSet = false;
+    this.initialized = false;
+    this.initializationPromise = null; // Store the promise
   }
 
   async initialize() {
-    if (window.ethereum) {
-      this.provider = new ethers.providers.Web3Provider(window.ethereum);
-      await this.provider.send("eth_requestAccounts", []);
-      this.signer = this.provider.getSigner();
-      this.contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, this.signer);
+    // If already initialized, just return the account
+    if (this.initialized && this.account) {
+      console.log('Already initialized, returning existing account:', this.account);
+      return this.account;
+    }
+
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise) {
+      console.log('Initialization in progress, waiting...');
+      return this.initializationPromise;
+    }
+
+    if (!window.ethereum) {
+      throw new Error('MetaMask is not installed. Please install MetaMask to use this application.');
+    }
+
+    // Create and store the initialization promise
+    this.initializationPromise = this._doInitialize();
+    
+    try {
+      const result = await this.initializationPromise;
+      return result;
+    } finally {
+      this.initializationPromise = null;
     }
   }
 
-  async isDomainAvailable(domain) {
-    return await this.contract.isDomainAvailable(domain);
+  async _doInitialize() {
+    try {
+      // Check if already connected
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_accounts' 
+      });
+
+      if (accounts.length > 0) {
+        // Already connected, use existing account
+        this.account = accounts[0];
+      } else {
+        // Request new connection
+        const newAccounts = await window.ethereum.request({ 
+          method: 'eth_requestAccounts' 
+        });
+        this.account = newAccounts[0];
+      }
+      
+      // Create provider and signer
+      this.provider = new ethers.providers.Web3Provider(window.ethereum);
+      this.signer = this.provider.getSigner();
+      
+      // Create contract instance
+      this.contract = new ethers.Contract(
+        CONTRACT_ADDRESS, 
+        CONTRACT_ABI, 
+        this.signer
+      );
+
+      // Set up event listeners (only once)
+      if (!this.listenersSet) {
+        // Remove old listeners first (if any)
+        window.ethereum.removeAllListeners('accountsChanged');
+        window.ethereum.removeAllListeners('chainChanged');
+        
+        // Add new listeners
+        window.ethereum.on('accountsChanged', this.handleAccountsChanged.bind(this));
+        window.ethereum.on('chainChanged', this.handleChainChanged.bind(this));
+        this.listenersSet = true;
+      }
+
+      this.initialized = true;
+      return this.account;
+    } catch (error) {
+      console.error('Failed to initialize Web3:', error);
+      throw error;
+    }
   }
 
-  async resolveDomain(domain) {
-    return await this.contract.resolveDomain(domain);
+  handleAccountsChanged(accounts) {
+    console.log('Account change detected:', accounts);
+    
+    if (accounts.length === 0) {
+      console.log('No accounts connected. Clearing session...');
+      this.account = null;
+      this.provider = null;
+      this.signer = null;
+      this.contract = null;
+      this.initialized = false;
+      sessionStorage.removeItem('walletConnected');
+      sessionStorage.removeItem('walletAccount');
+      window.location.reload();
+    } else {
+      const newAccount = accounts[0].toLowerCase();
+      const currentAccount = this.account?.toLowerCase();
+      
+      if (newAccount !== currentAccount) {
+        console.log('Account changed from', this.account, 'to', accounts[0]);
+        this.account = accounts[0];
+        sessionStorage.setItem('walletAccount', accounts[0]);
+        window.location.reload();
+      }
+    }
   }
 
-  async reverseResolve(address) {
-    return await this.contract.reverseResolve(address);
+  handleChainChanged(chainId) {
+    console.log('Chain changed to:', chainId);
+    window.location.reload();
   }
 
-  async getAuctionInfo(domain) {
-    return await this.contract.getAuctionInfo(domain);
+  async getAccount() {
+    if (!this.account) {
+      await this.initialize();
+    }
+    return this.account;
   }
 
-  async startAuction(domain) {
-    const tx = await this.contract.startAuction(domain);
-    return await tx.wait();
+  async getBalance() {
+    if (!this.account || !this.provider) {
+      await this.initialize();
+    }
+    const balance = await this.provider.getBalance(this.account);
+    return ethers.utils.formatEther(balance);
   }
 
-  async commitBid(domain, commitment, value) {
-    const tx = await this.contract.commitBid(domain, commitment, { value });
-    return await tx.wait();
+  async getNetwork() {
+    if (!this.provider) {
+      await this.initialize();
+    }
+    return await this.provider.getNetwork();
   }
 
-  async revealBid(domain, bidAmount, secret) {
-    const tx = await this.contract.revealBid(domain, bidAmount, secret);
-    return await tx.wait();
-  }
-
-  async finalizeAuction(domain) {
-    const tx = await this.contract.finalizeAuction(domain);
-    return await tx.wait();
-  }
-
-  async transferDomain(domain, newOwner) {
-    const tx = await this.contract.transferDomain(domain, newOwner);
-    return await tx.wait();
-  }
-
-  async sendToDomain(domain, value) {
-    const tx = await this.contract.sendToDomain(domain, { value });
-    return await tx.wait();
-  }
-
-  async getAllRegisteredDomains() {
-    return await this.contract.getAllRegisteredDomains();
+  disconnect() {
+    if (window.ethereum && this.listenersSet) {
+      window.ethereum.removeAllListeners('accountsChanged');
+      window.ethereum.removeAllListeners('chainChanged');
+    }
+    
+    this.account = null;
+    this.provider = null;
+    this.signer = null;
+    this.contract = null;
+    this.listenersSet = false;
+    this.initialized = false;
+    this.initializationPromise = null;
   }
 }
 

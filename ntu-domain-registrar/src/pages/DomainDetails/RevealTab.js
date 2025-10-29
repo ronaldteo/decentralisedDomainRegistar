@@ -6,7 +6,6 @@ import CountdownTimer from '../../components/common/CountdownTimer';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Card, CardContent } from '../../components/ui/card';
 
 const RevealTab = ({ domain, domainData, onUpdate }) => {
   const [bidAmount, setBidAmount] = useState('');
@@ -60,21 +59,17 @@ const RevealTab = ({ domain, domainData, onUpdate }) => {
 
   if (auctionStatus === 'ended') {
     return (
-      <Card className="border-gray-300 bg-gray-50">
-        <CardContent className="flex items-center justify-center p-8">
-          <p className="text-lg font-medium leading-none text-black">Auction has ended</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center rounded-2xl border-2 border-gray-300 bg-gray-50 p-8">
+        <p className="text-lg font-medium leading-none text-black">Auction has ended</p>
+      </div>
     );
   }
 
   if (auctionStatus === 'commit') {
     return (
-      <Card className="border-gray-300 bg-gray-50">
-        <CardContent className="flex items-center justify-center p-8">
-          <p className="text-lg font-medium leading-none text-black">Currently in commit phase</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center rounded-2xl border-2 border-gray-300 bg-gray-50 p-8">
+        <p className="text-lg font-medium leading-none text-black">Currently in commit phase</p>
+      </div>
     );
   }
 
@@ -88,16 +83,12 @@ const RevealTab = ({ domain, domainData, onUpdate }) => {
         />
       )}
 
-      <Card className="border-gray-300 bg-gray-50">
-        <CardContent className="flex items-start gap-3 p-5">
-          <div className="flex items-center justify-center rounded-full bg-white p-2.5 shadow-sm">
-            <Info className="h-5 w-5 text-black" />
-          </div>
-          <p className="flex-1 text-sm leading-relaxed text-gray-700">
-            The auction will automatically finalize when the timer reaches zero.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex items-start gap-2 rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 text-blue-800">
+        <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <p className="text-sm leading-relaxed">
+          The auction will automatically finalize when the timer reaches zero.
+        </p>
+      </div>
 
       <div className="space-y-6">
         <div className="space-y-3">

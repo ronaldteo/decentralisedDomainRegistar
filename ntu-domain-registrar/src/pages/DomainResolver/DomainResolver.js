@@ -33,93 +33,97 @@ const DomainResolver = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-12">
-        <div className="mx-auto max-w-3xl">
-          <Card className="border-gray-300 bg-white">
-            <CardHeader>
-              <CardTitle className="text-3xl leading-tight text-black">Domain Resolver</CardTitle>
-              <CardDescription className="text-base leading-relaxed text-gray-600">
-                Resolve domain names to addresses or vice versa
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="flex gap-2 rounded-2xl border-2 border-gray-300 bg-gray-100 p-2">
-                <button
-                  onClick={() => setMode('domain')}
-                  className={`flex flex-1 items-center justify-center rounded-xl px-6 py-3 text-sm font-medium leading-none transition-all ${
-                    mode === 'domain'
-                      ? 'bg-white text-black shadow-sm'
-                      : 'text-gray-700 hover:text-black'
-                  }`}
+      <div className="container mx-auto px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-16 text-center">
+            <h1 className="mb-5 text-6xl font-bold leading-tight tracking-tight text-black">
+              Domain Resolver
+            </h1>
+            <p className="text-xl leading-relaxed text-gray-600">
+              Resolve domain names to addresses or find all domains owned by an address
+            </p>
+          </div>
+          
+          <Card className="mb-8 border-gray-300 bg-white shadow-lg">
+            <CardContent className="p-10">
+              <div className="space-y-6">
+                <div className="flex gap-2 rounded-2xl border-2 border-gray-300 bg-gray-100 p-2">
+                  <button
+                    onClick={() => setMode('domain')}
+                    className={`flex flex-1 items-center justify-center rounded-xl px-6 py-3 text-sm font-medium leading-none transition-all ${
+                      mode === 'domain'
+                        ? 'bg-white text-black shadow-sm'
+                        : 'text-gray-700 hover:text-black'
+                    }`}
+                  >
+                    Domain to Address
+                  </button>
+                  <button
+                    onClick={() => setMode('address')}
+                    className={`flex flex-1 items-center justify-center rounded-xl px-6 py-3 text-sm font-medium leading-none transition-all ${
+                      mode === 'address'
+                        ? 'bg-white text-black shadow-sm'
+                        : 'text-gray-700 hover:text-black'
+                    }`}
+                  >
+                    Address to Domains
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="resolveInput" className="text-base font-semibold leading-none text-black">
+                    {mode === 'domain' ? 'Domain Name' : 'Ethereum Address'}
+                  </Label>
+                  <Input
+                    id="resolveInput"
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={mode === 'domain' ? 'example.ntu' : '0x...'}
+                    className="h-14 border-2 border-gray-300 bg-white text-base leading-none text-black placeholder:text-gray-500"
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleResolve}
+                  disabled={loading}
+                  className="h-14 w-full text-base leading-none"
+                  size="lg"
                 >
-                  Domain to Address
-                </button>
-                <button
-                  onClick={() => setMode('address')}
-                  className={`flex flex-1 items-center justify-center rounded-xl px-6 py-3 text-sm font-medium leading-none transition-all ${
-                    mode === 'address'
-                      ? 'bg-white text-black shadow-sm'
-                      : 'text-gray-700 hover:text-black'
-                  }`}
-                >
-                  Address to Domains
-                </button>
+                  {loading ? 'Resolving...' : 'Resolve'}
+                </Button>
               </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="resolveInput" className="text-base font-semibold leading-none text-black">
-                  {mode === 'domain' ? 'Domain Name' : 'Ethereum Address'}
-                </Label>
-                <Input
-                  id="resolveInput"
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={mode === 'domain' ? 'example.ntu' : '0x...'}
-                  className="h-14 border-2 border-gray-300 bg-white text-base leading-none text-black placeholder:text-gray-500"
-                />
-              </div>
-
-              <Button 
-                onClick={handleResolve}
-                disabled={loading}
-                className="h-14 w-full text-base leading-none"
-                size="lg"
-              >
-                {loading ? 'Resolving...' : 'Resolve'}
-              </Button>
-
-              {result && (
-                <Card className="border-gray-300 bg-gray-50">
-                  <CardHeader>
-                    <CardTitle className="text-sm uppercase leading-none tracking-wide text-black">
-                      Result
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {result.type === 'address' ? (
-                      <code className="block break-all rounded-2xl border-2 border-gray-300 bg-white p-5 font-mono text-sm leading-relaxed text-black">
-                        {result.value}
-                      </code>
-                    ) : (
-                      <div className="space-y-2">
-                        {result.value.length > 0 ? (
-                          result.value.map((domain, idx) => (
-                            <div key={idx} className="flex items-center rounded-2xl border-2 border-gray-300 bg-white px-5 py-4">
-                              <span className="text-sm font-medium leading-none text-black">{domain}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-center text-sm leading-relaxed text-gray-600">No domains found</p>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
             </CardContent>
           </Card>
+
+          {result && (
+            <Card className="border-gray-300 bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl text-black">Result</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {result.type === 'address' ? (
+                  <code className="block break-all rounded-2xl border-2 border-gray-300 bg-gray-50 p-5 font-mono text-sm leading-relaxed text-black">
+                    {result.value}
+                  </code>
+                ) : (
+                  <div className="space-y-2">
+                    {result.value.length > 0 ? (
+                      result.value.map((domain, idx) => (
+                        <div key={idx} className="flex items-center rounded-2xl border-2 border-gray-300 bg-gray-50 px-5 py-4">
+                          <span className="font-medium leading-none text-black">{domain}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-base leading-relaxed text-gray-600 py-8">
+                        No domains found for this address
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

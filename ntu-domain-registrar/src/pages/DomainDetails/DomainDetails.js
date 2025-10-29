@@ -27,12 +27,55 @@ const DomainDetails = () => {
       const owner = !available ? await contractService.resolveDomain(domain) : null;
       const auctionInfo = await contractService.getAuctionInfo(domain);
       
-      setDomainData({ available, owner, auctionInfo });
+      setDomainData({ 
+        available: available !== false,
+        owner, 
+        auctionInfo 
+      });
     } catch (error) {
       console.error('Error loading domain:', error);
+      setDomainData({ 
+        available: true, 
+        owner: null, 
+        auctionInfo: null 
+      });
     }
     setLoading(false);
   };
+
+  const getStatusInfo = () => {
+    if (!domainData) return { label: 'Available', color: 'green' };
+    
+    const phase = domainData.auctionInfo?.phase;
+    
+    if (!domainData.available) {
+      return { 
+        label: 'Registered', 
+        color: 'black' 
+      };
+    }
+    
+    if (phase === 'commit') {
+      return { 
+        label: 'In Commit Phase', 
+        color: 'orange' 
+      };
+    }
+    
+    if (phase === 'reveal') {
+      return { 
+        label: 'In Reveal Phase', 
+        color: 'orange' 
+      };
+    }
+    
+    return { 
+      label: 'Available', 
+      color: 'green' 
+    };
+  };
+
+  const statusInfo = getStatusInfo();
 
   if (loading) {
     return (
@@ -62,14 +105,15 @@ const DomainDetails = () => {
                 <div>
                   <CardTitle className="mb-3 text-3xl leading-tight text-black">{domain}</CardTitle>
                   <Badge 
-                    variant={domainData?.available ? "default" : "secondary"}
                     className={`leading-none ${
-                      domainData?.available 
-                        ? "bg-black text-white" 
-                        : "border-gray-300 bg-gray-100 text-black"
+                      statusInfo.color === 'green' 
+                        ? "bg-green-600 text-white hover:bg-green-700" 
+                        : statusInfo.color === 'orange'
+                        ? "bg-orange-500 text-white hover:bg-orange-600"
+                        : "bg-black text-white hover:bg-gray-800"
                     }`}
                   >
-                    {domainData?.available ? 'Available' : 'Registered'}
+                    {statusInfo.label}
                   </Badge>
                 </div>
               </div>
