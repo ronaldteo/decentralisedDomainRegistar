@@ -102,6 +102,9 @@ export async function commit(domain, amount, secret) {
                 auction
             }
         }
+
+        //get existing auction
+        auction = await contractService.contract.getAuctionInfo(domain);
         
     } catch (error) {
         //if domain is expired or not registered
@@ -223,7 +226,7 @@ export async function reveal(domain, amount, secret) {
 export async function finalize(domain) {
     let auction; // if undefined -> auction not ready to be finalised
     let owner; // if undefined -> current owner is not bid winner
-    let finalized; // contains details about finalize txn, if needed
+    let finalized; // contains details about finalize txn
 
     //check if reveal phase ended
     try {
