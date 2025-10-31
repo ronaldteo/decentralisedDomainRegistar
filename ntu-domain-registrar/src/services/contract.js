@@ -83,9 +83,9 @@ export async function allDomains() {
 }
 
 //secret generator
-export function generateSecret() {
-  return ethers.utils.hexlify(ethers.utils.randomBytes(32));
-}
+// export function generateSecret() {
+//   return ethers.utils.hexlify(ethers.utils.randomBytes(32));
+// }
 
 //commit function
 export async function commit(domain, amount, secret) {
@@ -95,12 +95,14 @@ export async function commit(domain, amount, secret) {
         await contractService.initialize();
         //check if domain already exists
         const address = await contractService.contract.resolveDomain(domain);
-        auction = await contractService.contract.getAuctionInfo(domain);
-        console.log("Domain already exists", address);
-        return {
-            auction
+        if (typeof address !== "undefined") {
+            console.log("Domain already exists", address);
+            return {
+                bid,
+                auction
+            }
         }
-
+        
     } catch (error) {
         //if domain is expired or not registered
         if (error.message.includes("expired")) {
@@ -132,25 +134,29 @@ export async function commit(domain, amount, secret) {
 
         //make commitment
         //secret = generateSecret();
-        const commit = await contractService.contract.makeCommitment(domain, convertedAmt, secret);
+        const secret32 = ethers.utils.formatBytes32String(secret);
+        const commit = await contractService.contract.makeCommitment(domain, convertedAmt, secret32);
         console.log(commit);
         bid = await contractService.contract.commitBid(domain, commit, {value: convertedAmt});
         console.log(bid);
         return {
-            secret,
             bid,
             auction
         }
     } catch (error) {
-        // if auction does not exist (but this will never happen)
+        // return error message
         if (error.message.includes("exist")) {
             console.log("Auction does not exist");
+            return "Auction does not exist";
         } else if (error.message.includes("ended")) {
             console.log("Commit phase has ended");
+            return "Commit phase has ended";
         } else if (error.message.includes("deposit")) {
             console.log("Invalid deposit amount");
+            return "Invalid deposit amount";
         } else if (error.message.includes("committed")) {
             console.log("Address already committed");
+            return "Address already committed";
         } else {
             console.log(error);
             throw error;
@@ -166,11 +172,12 @@ export async function auctionInfo(domain) {
         return auction;
 
     } catch (error) {
-        //TODO: what return value is needed?
         if (error.message.includes("expired")) {
             console.log("Domain has expired");
+            return "Domain has expired";
         } else if (error.message.includes("not registered")) {
             console.log("Domain not registered");
+            return "Domain has expired";
         }
     }
 }
@@ -180,23 +187,105 @@ export async function reveal(domain, amount, secret) {
     try {
         await contractService.initialize();
         const convertedAmt = ethers.utils.parseEther(amount.toString());
+        const secret32 = ethers.utils.formatBytes32String(secret);
 
-        const reveal = await contractService.contract.revealBid(domain, convertedAmt, secret);
+        const reveal = await contractService.contract.revealBid(domain, convertedAmt, secret32);
         console.log(reveal);
         
-
     } catch (error) {
-        console.log(error);
-        throw error       
+        if (error.message.includes("Commit phase")) {
+            console.log("Commit phase has not ended");
+            return "Commit phase has not ended";
+        } else if (error.message.includes("Reveal phase")) {
+            console.log("Reveal phase has ended");
+            return "Reveal phase has ended";
+        } else if (error.message.includes("commitment")) {
+            console.log("No commitment found!");
+            return "No commitment found!";
+        } else if (error.message.includes("revealed")) {
+            console.log("Bid already revealed");
+            return "Bid already revealed";
+        } else if (error.message.includes("Invalid")) {
+            console.log("Invalid reveal transaction");
+            return "Invalid reveal transaction";
+        } else if (error.message.includes("Deposit")) {
+            console.log("Deposit less than bid");
+            return "Deposit less than bid";
+        } else {
+            console.log(error);
+            throw error;
+        }       
     }
 }
 
+//finalise auction
+// only show finalise button if reveal over + current account is winner
 export async function finalize(domain) {
-    try{
-        const finalize = await contractService.contract.finalizeAuction(domain);
-        console.log(finalize);
-        return finalize;
+    let auction; // if undefined -> auction not ready to be finalised
+    let owner; // if undefined -> current owner is not bid winner
+    let finalized; // contains details about finalize txn, if needed
+
+    //check if reveal phase ended
+    try {
+        await contractService.initialize();
+        if (canFinalizeAuction(domain)) {
+            auction = contractService.contract.getAuctionInfo(domain);
+        } else {
+            console.log("Auction cannot be finalised now")
+            return {
+                auction,
+                owner,
+                finalized
+            }
+        }
     } catch (error) {
         console.log(error);
+        throw error;
     }
+
+    //check if current owner is bid winner
+    try {
+        const account = await contractService.getAccount();
+        const winner = auction.highestBidder;
+        if (account === winner) {
+            owner = account;
+        } else {
+            console.log("Current account is not highest bidder");
+            return {
+                auction,
+                owner,
+                finalized
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+    
+    // finalize
+    try {
+        finalized = await contractService.contract.finalizeAuction(domain);
+        console.log(finalized);
+        return {
+            auction,
+            owner,
+            finalized
+        };
+    } catch (error) { // catches error if insufficient gas
+        console.log(error);
+        throw error;
+    }
+}
+
+//helper function to check if reveal phase ended
+export async function canFinalizeAuction(domainName) {
+  try {
+    const info = await contractService.contract.getAuctionInfo(domainName);
+    const now = Math.floor(Date.now() / 1000);
+    const revealEnd = parseInt(info.revealEndTime);
+    return now >= revealEnd && !info.finalized && revealEnd > 0;
+  } catch (error) {
+    console.error('Error checking if can finalize:', error);
+    return false;
+  }
 }
