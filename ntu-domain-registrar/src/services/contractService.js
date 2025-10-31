@@ -1,7 +1,7 @@
 ﻿import { ethers } from 'ethers';
 import CONTRACT_ABI from '../config/contractABI.json';
 
-const CONTRACT_ADDRESS = '0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3';
+const CONTRACT_ADDRESS = '0xF963010d45Bc1053875171961A8A1516148D705a';
 
 class ContractService {
   constructor() {
