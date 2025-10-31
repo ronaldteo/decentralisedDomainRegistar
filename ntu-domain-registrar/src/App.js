@@ -1,5 +1,4 @@
-﻿import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+﻿import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/layout/Header';
 import NetworkChecker from './components/common/NetworkChecker';
 import DomainSearch from './pages/DomainSearch/DomainSearch';
@@ -7,8 +6,17 @@ import DomainDetails from './pages/DomainDetails/DomainDetails';
 import DomainResolver from './pages/DomainResolver/DomainResolver';
 import SendEth from './pages/SendEth/SendEth';
 import History from './pages/History/History';
+import React, { useEffect } from 'react';
+import * as contractFunctions from './services/contract';
+import contractService from './services/contractService';
 
 function App() {
+  useEffect(() => {
+    // Attach functions to window object for testing
+    window.testContract = contractFunctions;
+    window.contractService = contractService;
+  }, []);
+
   return (
     <Router>
       <NetworkChecker>
