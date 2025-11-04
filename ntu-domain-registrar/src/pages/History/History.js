@@ -105,7 +105,7 @@ const History = () => {
           <div className="mx-auto max-w-6xl">
             <div className="mb-16 text-center">
               <h1 className="mb-5 text-6xl font-bold leading-tight tracking-tight text-black">
-                Domain History
+                Domain Registry
               </h1>
               <p className="text-xl leading-relaxed text-gray-600">
                 View all registered .ntu domains
@@ -131,7 +131,7 @@ const History = () => {
           <div className="mx-auto max-w-6xl">
             <div className="mb-16 text-center">
               <h1 className="mb-5 text-6xl font-bold leading-tight tracking-tight text-black">
-                Domain History
+                Domain Registry
               </h1>
               <p className="text-xl leading-relaxed text-gray-600">
                 View all registered .ntu domains
@@ -161,7 +161,7 @@ const History = () => {
         <div className="mx-auto max-w-6xl">
           <div className="mb-16 text-center">
             <h1 className="mb-5 text-6xl font-bold leading-tight tracking-tight text-black">
-              Domain History
+              Domain Registry
             </h1>
             <p className="text-xl leading-relaxed text-gray-600">
               View all registered .ntu domains
