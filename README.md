@@ -53,6 +53,8 @@ const CONTRACT_ADDRESS = '0x8b189f9b319d591c6d4ac65337f9454b7c580072';
 
 ### Step 3: Launch Development Server
 
+Go to the ntu-domain-registrar directory.
+
 ```bash
 npm start
 ```
