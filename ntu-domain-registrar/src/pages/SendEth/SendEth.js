@@ -40,7 +40,7 @@ const SendEth = () => {
       setOwnerAddress(address);
       setShowConfirmation(true);
     } catch (err) {
-      console.error('Error fetching domain owner:', err);
+      console.error('Error fetching domain owner');
       setError(`Failed to resolve domain. ${err.message}`);
     } finally {
       setFetchingOwner(false);
@@ -65,8 +65,6 @@ const SendEth = () => {
         setOwnerAddress(null);
       }
     } catch (err) {
-      console.error('Send error:', err);
-      
       if (err.message.includes('not registered')) {
         setError(`Domain "${domain}" is not registered`);
       } else if (err.message.includes('insufficient funds')) {

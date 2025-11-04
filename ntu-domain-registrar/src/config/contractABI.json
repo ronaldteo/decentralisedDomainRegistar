@@ -100,24 +100,6 @@
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "commitment",
-				"type": "bytes32"
-			}
-		],
-		"name": "commitBid",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -187,83 +169,42 @@
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
-			}
-		],
-		"name": "finalizeAuction",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
-			},
+		"inputs": [],
+		"name": "COMMIT_DURATION",
+		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "bidValue",
+				"name": "",
 				"type": "uint256"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "secret",
-				"type": "bytes32"
 			}
 		],
-		"name": "revealBid",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "REGISTRATION_DURATION",
+		"outputs": [
 			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "sendToDomain",
-		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "REVEAL_DURATION",
+		"outputs": [
 			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "startAuction",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "domainName",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferDomain",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -311,16 +252,21 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "COMMIT_DURATION",
-		"outputs": [
+		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "commitment",
+				"type": "bytes32"
 			}
 		],
-		"stateMutability": "view",
+		"name": "commitBid",
+		"outputs": [],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -353,13 +299,36 @@
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			}
+		],
+		"name": "finalizeAuction",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "getAllRegisteredDomains",
 		"outputs": [
 			{
 				"internalType": "string[]",
-				"name": "",
+				"name": "domainNames",
 				"type": "string[]"
+			},
+			{
+				"internalType": "address[]",
+				"name": "owners",
+				"type": "address[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "expiryDates",
+				"type": "uint256[]"
 			}
 		],
 		"stateMutability": "view",
@@ -506,19 +475,6 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "REGISTRATION_DURATION",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "string",
@@ -538,16 +494,26 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "REVEAL_DURATION",
-		"outputs": [
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			},
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "bidValue",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "secret",
+				"type": "bytes32"
 			}
 		],
-		"stateMutability": "view",
+		"name": "revealBid",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -586,6 +552,50 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			}
+		],
+		"name": "sendToDomain",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			}
+		],
+		"name": "startAuction",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "domainName",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferDomain",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]

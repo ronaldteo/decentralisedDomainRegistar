@@ -4,16 +4,45 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Loader2, AlertCircle, ExternalLink, Copy } from 'lucide-react';
 
+
 const History = () => {
   const [domains, setDomains] = useState([]);
-  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copiedAddress, setCopiedAddress] = useState(null);
 
+
   useEffect(() => {
     loadAllDomains();
   }, []);
+
+
+  const removeDuplicates = (domainsList) => {
+    if (!Array.isArray(domainsList) || domainsList.length === 0) {
+      return [];
+    }
+
+    const seenDomains = new Map();
+
+    domainsList.forEach((domainData) => {
+      const domainName = domainData.domain;
+      
+      if (seenDomains.has(domainName)) {
+        const existing = seenDomains.get(domainName);
+        const existingExpiry = new Date(existing.expiryDate).getTime();
+        const newExpiry = new Date(domainData.expiryDate).getTime();
+        
+        if (newExpiry > existingExpiry) {
+          seenDomains.set(domainName, domainData);
+        }
+      } else {
+        seenDomains.set(domainName, domainData);
+      }
+    });
+
+    return Array.from(seenDomains.values());
+  };
+
 
   const loadAllDomains = async () => {
     setLoading(true);
@@ -21,27 +50,24 @@ const History = () => {
     try {
       const result = await allDomains();
       
-      if (Array.isArray(result) && result.length === 2) {
-        setDomains(result[0]);
-        setAddresses(result[1]);
-      } else if (result.domains && result.addresses) {
-        setDomains(result.domains);
-        setAddresses(result.addresses);
+      if (Array.isArray(result)) {
+        const uniqueDomains = removeDuplicates(result);
+        setDomains(uniqueDomains);
       } else {
         setDomains([]);
-        setAddresses([]);
       }
     } catch (err) {
-      console.error('Error loading domains:', err);
       setError('Failed to load domain history. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+
   const viewDomain = (domain) => {
     window.location.href = `/domain/${domain}`;
   };
+
 
   const copyAddress = (address) => {
     navigator.clipboard.writeText(address);
@@ -49,9 +75,28 @@ const History = () => {
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
+
   const openEtherscan = (address) => {
     window.open(`https://sepolia.etherscan.io/address/${address}`, '_blank');
   };
+
+
+  const formatExpiryDate = (expiryDate, isExpired) => {
+    const date = new Date(expiryDate);
+    const formattedDate = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const formattedTime = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    return { formattedDate, formattedTime, isExpired };
+  };
+
 
   if (loading) {
     return (
@@ -77,6 +122,7 @@ const History = () => {
       </div>
     );
   }
+
 
   if (error) {
     return (
@@ -108,11 +154,11 @@ const History = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          {/* Header */}
           <div className="mb-16 text-center">
             <h1 className="mb-5 text-6xl font-bold leading-tight tracking-tight text-black">
               Domain History
@@ -122,7 +168,6 @@ const History = () => {
             </p>
           </div>
 
-          {/* Stats Card */}
           <Card className="mb-8 border-gray-300 bg-white shadow-lg overflow-hidden">
             <CardContent className="p-8">
               <div className="flex items-center gap-4">
@@ -130,14 +175,13 @@ const History = () => {
                   <span className="text-2xl font-bold text-white">{domains.length}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Domains Registered</p>
+                  <p className="text-sm font-medium text-gray-600">Total Unique Domains Registered</p>
                   <p className="text-base text-gray-700">Active in the .ntu registry</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Domains List */}
           {domains.length === 0 ? (
             <Card className="border-gray-300 bg-white shadow-lg">
               <CardContent className="flex items-center justify-center p-20">
@@ -149,10 +193,8 @@ const History = () => {
             </Card>
           ) : (
             <Card className="border-gray-300 bg-white shadow-lg overflow-hidden">
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full">
-                  {/* Header */}
                   <thead className="border-b-2 border-gray-200 bg-gray-50">
                     <tr>
                       <th className="px-8 py-5 text-left">
@@ -162,38 +204,38 @@ const History = () => {
                         <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Owner Address</span>
                       </th>
                       <th className="px-8 py-5 text-left">
+                        <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Expiry Date</span>
+                      </th>
+                      <th className="px-8 py-5 text-left">
                         <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Action</span>
                       </th>
                     </tr>
                   </thead>
 
-                  {/* Body */}
                   <tbody className="divide-y divide-gray-200">
-                    {domains.map((domain, index) => {
-                      const address = addresses[index];
+                    {domains.map((domainData, index) => {
+                      const { formattedDate, formattedTime, isExpired } = formatExpiryDate(domainData.expiryDate, domainData.isExpired);
                       
                       return (
                         <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                          {/* Domain Name */}
                           <td className="px-8 py-5">
-                            <p className="text-base font-bold text-black">{domain}</p>
+                            <p className="text-base font-bold text-black">{domainData.domain}</p>
                           </td>
 
-                          {/* Owner Address */}
                           <td className="px-8 py-5">
                             <div className="flex items-center gap-2">
                               <code className="text-sm font-mono text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
-                                {address}
+                                {domainData.owner}
                               </code>
                               <button
-                                onClick={() => copyAddress(address)}
+                                onClick={() => copyAddress(domainData.owner)}
                                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                                 title="Copy address"
                               >
-                                <Copy className={`h-4 w-4 ${copiedAddress === address ? 'text-green-600' : 'text-gray-400'}`} />
+                                <Copy className={`h-4 w-4 ${copiedAddress === domainData.owner ? 'text-green-600' : 'text-gray-400'}`} />
                               </button>
                               <button
-                                onClick={() => openEtherscan(address)}
+                                onClick={() => openEtherscan(domainData.owner)}
                                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                                 title="View on Etherscan"
                               >
@@ -202,10 +244,25 @@ const History = () => {
                             </div>
                           </td>
 
-                          {/* View Domain Button */}
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className={`text-sm font-semibold ${isExpired ? 'text-red-600' : 'text-black'}`}>
+                                  {formattedDate}
+                                </p>
+                                <p className="text-xs text-gray-600">{formattedTime}</p>
+                              </div>
+                              {isExpired && (
+                                <span className="ml-2 inline-block px-2 py-1 rounded-full bg-red-100 text-xs font-semibold text-red-700">
+                                  Expired
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
                           <td className="px-8 py-5 text-left">
                             <Button
-                              onClick={() => viewDomain(domain)}
+                              onClick={() => viewDomain(domainData.domain)}
                               size="sm"
                               className="text-sm"
                             >
@@ -218,59 +275,13 @@ const History = () => {
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden">
-                <div className="divide-y divide-gray-200">
-                  {domains.map((domain, index) => {
-                    const address = addresses[index];
-                    
-                    return (
-                      <div key={index} className="p-6 hover:bg-gray-50 transition-colors">
-                        <div className="mb-4">
-                          <p className="text-sm text-gray-600 mb-2">Domain</p>
-                          <p className="text-base font-bold text-black">{domain}</p>
-                        </div>
-                        <div className="mb-4 space-y-2">
-                          <p className="text-sm text-gray-600">Owner</p>
-                          <div className="flex items-center gap-2">
-                            <code className="break-all text-xs font-mono text-gray-700 bg-gray-50 rounded-lg px-3 py-2 flex-1">
-                              {address}
-                            </code>
-                            <button
-                              onClick={() => copyAddress(address)}
-                              className="p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
-                            >
-                              <Copy className={`h-4 w-4 ${copiedAddress === address ? 'text-green-600' : 'text-gray-400'}`} />
-                            </button>
-                            <button
-                              onClick={() => openEtherscan(address)}
-                              className="p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
-                            >
-                              <ExternalLink className="h-4 w-4 text-gray-400" />
-                            </button>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => viewDomain(domain)}
-                          size="sm"
-                          className="w-full text-sm"
-                        >
-                          View Domain
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </Card>
           )}
 
-          {/* Pagination Info */}
           {domains.length > 0 && (
             <div className="mt-8 text-center">
               <p className="text-gray-600 mb-6">
-                Total <span className="font-semibold text-black">{domains.length}</span> domain{domains.length !== 1 ? 's' : ''} registered
+                Total <span className="font-semibold text-black">{domains.length}</span> unique domain{domains.length !== 1 ? 's' : ''} registered
               </p>
               <Button
                 variant="outline"
@@ -286,5 +297,6 @@ const History = () => {
     </div>
   );
 };
+
 
 export default History;

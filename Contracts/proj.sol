@@ -37,7 +37,7 @@ contract NTUDomainRegistrar {
     
     uint256 public constant COMMIT_DURATION = 2 minutes;
     uint256 public constant REVEAL_DURATION = 2 minutes;
-    uint256 public constant REGISTRATION_DURATION = 365 days;
+    uint256 public constant REGISTRATION_DURATION = 5 minutes;
     
     
     event AuctionStarted(string domainName, uint256 commitEndTime, uint256 revealEndTime);
@@ -54,7 +54,7 @@ contract NTUDomainRegistrar {
     }
     
     modifier domainNotRegistered(string memory domainName) {
-        require(!domains[domainName].isRegistered, "Domain already registered");
+        require(((!domains[domainName].isRegistered) || (domains[domainName].isRegistered && block.timestamp >= domains[domainName].expiryTime)), "Domain already registered"); //edited
         _;
     }
     
@@ -67,14 +67,28 @@ contract NTUDomainRegistrar {
     function startAuction(string memory domainName) 
         public 
         domainNotRegistered(domainName) 
-    {
-        require(auctions[domainName].commitEndTime == 0, "Auction already exists");
-        
+    {   
         Auction storage auction = auctions[domainName];
+
+        bool noAuctionExists = auctions[domainName].commitEndTime == 0;
+        bool auctionEndedNoBids = auction.revealEndTime != 0 && auction.highestBid == 0 && !auction.finalized;
+        bool domainExpired = domains[domainName].isRegistered && block.timestamp >= domains[domainName].expiryTime;
+        require(noAuctionExists || auctionEndedNoBids || domainExpired, "Auction already exists"); //edited
+
+        // edited to reset the bidders
+        if (auction.commitEndTime != 0) {
+        for (uint i = 0; i < auction.bidders.length; i++) {
+            delete auction.bids[auction.bidders[i]];
+        }
+        delete auction.bidders;
+        }
+   
         auction.domainName = domainName;
         auction.commitEndTime = block.timestamp + COMMIT_DURATION;
         auction.revealEndTime = auction.commitEndTime + REVEAL_DURATION;
         auction.finalized = false;
+        auction.highestBidder = address(0);
+        auction.highestBid = 0;
         
         emit AuctionStarted(domainName, auction.commitEndTime, auction.revealEndTime);
     }
@@ -86,10 +100,11 @@ contract NTUDomainRegistrar {
     {
         Auction storage auction = auctions[domainName];
         require(auction.commitEndTime > 0, "Auction does not exist");
-        require(block.timestamp < auction.commitEndTime, "Commit phase ended");
         require(msg.value > 0, "Must send deposit");
-        require(auction.bids[msg.sender].commitment == bytes32(0), "Already committed");
+        require((block.timestamp < auction.commitEndTime) || (block.timestamp > domains[domainName].expiryTime), "Commit phase ended"); //edited so that expired domain will not fail this check
+        require((auction.bids[msg.sender].commitment == bytes32(0)) || (auction.revealEndTime != 0 && auction.highestBid == 0 && !auction.finalized) || (block.timestamp > domains[domainName].expiryTime), "Already committed"); //edited to include case where nobody reveal or domain expired
         
+
         auction.bids[msg.sender] = Bid({
             commitment: commitment,
             deposit: msg.value,
@@ -206,8 +221,10 @@ contract NTUDomainRegistrar {
         view 
         returns (string memory) 
     {
+        require(block.timestamp < domains[reverseRegistry[owner]].expiryTime, "Domain expired");
         return reverseRegistry[owner];
     }
+
     function transferDomain(string memory domainName, address newOwner) 
         public 
         onlyDomainOwner(domainName)
@@ -235,8 +252,26 @@ contract NTUDomainRegistrar {
         emit EtherSent(domainName, msg.sender, msg.value);
     }
     
-    function getAllRegisteredDomains() public view returns (string[] memory) {
-        return registeredDomains;
+    function getAllRegisteredDomains() //edited to obtain expiry dates
+        public 
+        view 
+        returns (
+            string[] memory domainNames,
+            address[] memory owners,
+            uint256[] memory expiryDates
+        ) 
+    {
+        domainNames = new string[](registeredDomains.length);
+        owners = new address[](registeredDomains.length);
+        expiryDates = new uint256[](registeredDomains.length);
+        
+        for (uint i = 0; i < registeredDomains.length; i++) {
+            domainNames[i] = registeredDomains[i];
+            owners[i] = domains[registeredDomains[i]].owner;
+            expiryDates[i] = domains[registeredDomains[i]].expiryTime;
+        }
+        
+        return (domainNames, owners, expiryDates);
     }
 
     function getAuctionInfo(string memory domainName) 
@@ -279,7 +314,15 @@ contract NTUDomainRegistrar {
         );
     }
     
-    function isDomainAvailable(string memory domainName) public view returns (bool) {
-        return !domains[domainName].isRegistered && auctions[domainName].commitEndTime == 0;
+    function isDomainAvailable(string memory domainName) public view returns (bool) { //edited
+        bool notRegisteredNoAuction = !domains[domainName].isRegistered && auctions[domainName].commitEndTime == 0;
+    
+        bool auctionEndedNoBids = auctions[domainName].revealEndTime != 0 && 
+                                auctions[domainName].highestBid == 0 && 
+                                !auctions[domainName].finalized;
+        
+        bool domainExpired = domains[domainName].isRegistered && block.timestamp >= domains[domainName].expiryTime;
+        
+        return (notRegisteredNoAuction || auctionEndedNoBids || domainExpired);
     }
 }

@@ -6,12 +6,14 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 
+
 const DomainResolver = () => {
   const [mode, setMode] = useState('domain');
   const [input, setInput] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
 
   const validateDomain = (domain) => {
     // Check if domain ends with .ntu
@@ -39,15 +41,48 @@ const DomainResolver = () => {
     return { valid: true };
   };
 
+
+  const validateAddress = (address) => {
+    // Check if address is empty
+    if (!address || address.trim() === '') {
+      return { valid: false, message: 'Please enter an Ethereum address.' };
+    }
+
+    // Check if address starts with 0x
+    if (!address.startsWith('0x')) {
+      return { valid: false, message: 'Invalid address format. Ethereum addresses must start with 0x.' };
+    }
+
+    // Check if address is 42 characters long (0x + 40 hex characters)
+    if (address.length !== 42) {
+      return { valid: false, message: 'Invalid address format.' };
+    }
+
+    // Check if all characters after 0x are valid hex
+    const hexPart = address.slice(2);
+    if (!/^[0-9a-fA-F]{40}$/.test(hexPart)) {
+      return { valid: false, message: 'Invalid address format.' };
+    }
+
+    return { valid: true };
+  };
+
+
   const handleResolve = async () => {
     if (!input.trim()) {
       setError('Please enter a value');
       return;
     }
     
-    // Validate domain format for domain mode
+    // Validate input format
     if (mode === 'domain') {
       const validation = validateDomain(input.trim());
+      if (!validation.valid) {
+        setError(validation.message);
+        return;
+      }
+    } else {
+      const validation = validateAddress(input.trim());
       if (!validation.valid) {
         setError(validation.message);
         return;
@@ -63,14 +98,11 @@ const DomainResolver = () => {
         // Resolve domain to address
         const address = await domainResolver(input.trim());
         
-        console.log('Resolved address:', address); // Debug log
-        
         // Check if address is null, undefined, empty, or zero address
         if (!address || 
             address === '' || 
             address === '0x0000000000000000000000000000000000000000') {
           // Domain not registered
-          console.log('Setting notRegistered result');
           setResult({
             type: 'notRegistered',
             query: input.trim(),
@@ -78,7 +110,6 @@ const DomainResolver = () => {
           });
         } else {
           // Domain is registered with valid owner
-          console.log('Setting success result');
           setResult({ 
             type: 'address', 
             value: address,
@@ -90,7 +121,8 @@ const DomainResolver = () => {
         // Resolve address to domain
         const domain = await addressResolver(input.trim());
         
-        if (domain && domain !== '') {
+        // Check if domain is null, undefined, or empty
+        if (domain && domain !== '' && domain.trim() !== '') {
           setResult({ 
             type: 'domain', 
             value: domain,
@@ -98,7 +130,12 @@ const DomainResolver = () => {
             success: true
           });
         } else {
-          setError('No domain found for this address');
+          // No domain found
+          setResult({
+            type: 'notFound',
+            query: input.trim(),
+            success: false
+          });
         }
       }
     } catch (err) {
@@ -112,12 +149,18 @@ const DomainResolver = () => {
           success: false
         });
       } else {
-        setError('Error resolving address. Please check the format and try again.');
+        // For address resolution, show not found
+        setResult({
+          type: 'notFound',
+          query: input.trim(),
+          success: false
+        });
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleClear = () => {
     setInput('');
@@ -125,11 +168,13 @@ const DomainResolver = () => {
     setError(null);
   };
 
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleResolve();
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,6 +222,7 @@ const DomainResolver = () => {
                   </button>
                 </div>
 
+
                 {/* Input Field */}
                 <div className="space-y-3">
                   <Label htmlFor="resolveInput" className="text-base font-semibold leading-none text-black">
@@ -197,10 +243,11 @@ const DomainResolver = () => {
                     </p>
                   ) : (
                     <p className="text-sm text-gray-600">
-                      Enter a valid Ethereum address starting with 0x
+                      Enter a valid Ethereum address
                     </p>
                   )}
                 </div>
+
 
                 {/* Error Message */}
                 {error && (
@@ -213,6 +260,7 @@ const DomainResolver = () => {
                     </CardContent>
                   </Card>
                 )}
+
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
@@ -238,6 +286,7 @@ const DomainResolver = () => {
               </div>
             </CardContent>
           </Card>
+
 
           {/* Result Card - Domain to Address Success */}
           {result && result.success && result.type === 'address' && (
@@ -291,6 +340,7 @@ const DomainResolver = () => {
             </Card>
           )}
 
+
           {/* Result Card - Address to Domain Success */}
           {result && result.success && result.type === 'domain' && (
             <Card className="border-gray-300 bg-white shadow-sm">
@@ -332,7 +382,8 @@ const DomainResolver = () => {
             </Card>
           )}
 
-          {/* Result Card - Domain Not Registered (No Copy/Etherscan buttons) */}
+
+          {/* Result Card - Domain Not Registered Unsuccessful */}
           {result && !result.success && result.type === 'notRegistered' && (
             <Card className="border-gray-300 bg-white shadow-sm">
               <CardHeader>
@@ -369,10 +420,50 @@ const DomainResolver = () => {
               </CardContent>
             </Card>
           )}
+
+
+          {/* Result Card - Address Not Found Unsuccessful */}
+          {result && !result.success && result.type === 'notFound' && (
+            <Card className="border-gray-300 bg-white shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center rounded-full bg-gray-100 p-2">
+                    <XCircle className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-black">Resolution Unsuccessful</CardTitle>
+                    <CardDescription className="text-sm text-gray-600">
+                      No domain associated with this address
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border-2 border-gray-300 bg-gray-50 p-5">
+                    <p className="mb-2 text-sm font-medium text-gray-600">Address</p>
+                    <p className="text-lg font-semibold text-black break-all">{result.query}</p>
+                  </div>
+                  <p className="text-base leading-relaxed text-gray-700">
+                    This address does not have any registered domains in the .ntu registry. Start by registering a domain through our auction system.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      window.location.href = '/';
+                    }}
+                    className="h-12 w-full text-base leading-none"
+                  >
+                    Back to Home
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
 
 export default DomainResolver;
