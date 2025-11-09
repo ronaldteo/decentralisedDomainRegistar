@@ -171,6 +171,6 @@ Visit [Sepolia Faucet](https://sepoliafaucet.com) and claim test ETH
 
 ## Contributors
 - Xu Yiming  
-- milkcoy
+- Tan Yock Lim
 - Ronald Teo
 
